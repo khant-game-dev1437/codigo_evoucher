@@ -1,0 +1,8 @@
+GET http://localhost:3000/api/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2MzU0NTE0MzJ9.Juy5DLkIi-BxVqLrFHLWc-zFuPjrF3lKo9dH2t6M9IY
+###
+POST http://localhost:3000/api/login
+
+{
+    "username" : "Min Khant",
+}

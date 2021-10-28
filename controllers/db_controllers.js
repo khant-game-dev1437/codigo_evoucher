@@ -198,9 +198,18 @@ class Database_Controller {
             title,
           ]);
           if (result.affectedRows > 0) {
-            //console.log("SUCCESS UPDATE");
             resolve(result);
             res.send("Success Update evoucher.");
+          }
+          if (calculatePrice <= 0 || data.amount <= 0) {
+            var updateSQL =
+              "UPDATE evoucher SET voucher_status=?,use_status=? WHERE phone_no=? AND title=?";
+            var result = await db.query(updateSQL, [
+              "InActive",
+              "used",
+              phone_no,
+              title,
+            ]);
           }
         }
       } catch (err) {

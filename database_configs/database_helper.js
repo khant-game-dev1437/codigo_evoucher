@@ -3,13 +3,12 @@ const mysql = require("mysql");
 const config = require("./db_config");
 
 const pool = mysql.createPool({
-  connectionLimit: 50, //important
+  connectionLimit: 50,
   host: config.DB_HOST,
   port: config.DB_PORT,
   user: config.DB_USER,
   password: config.DB_PASSWORD,
   database: config.DB_COURSES_DATABASE,
-  //database: admin_tool_and_shan_promo_db,
   debug: false,
 });
 

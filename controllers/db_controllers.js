@@ -1,13 +1,13 @@
 var uniqueid = require("uuid");
-const valid = require("credit-card-type");
 var shortID = require("shortid");
-const jwt = require("jsonwebtoken");
+const QRCode = require("qrcode");
 
 var db = require("../database_configs/database_helper");
 const creditCardType = require("credit-card-type");
 class Database_Controller {
   constructor() {
     this.evouchers = [];
+    this.url = "";
   }
 
   getEvouchers(req, res) {
@@ -20,7 +20,6 @@ class Database_Controller {
         var result = await db.query(sql, ph);
         this.evouchers.push(result);
         resolve(result);
-        console.log("LENGTH " + this.evouchers.length);
         return this.evouchers, (this.evouchers = []);
       } catch (err) {
         console.log("err in getVouchers : ", err);
@@ -33,7 +32,6 @@ class Database_Controller {
       const {
         description,
         expiry_date,
-        image,
         quantity,
         buytype,
         phone_no,
@@ -44,51 +42,47 @@ class Database_Controller {
       var uuid = uniqueid.v4();
       var promoCode = shortID.generate();
       var data = this.creditCardsValidation(cardNo);
+      var qrData = {
+        title: uuid,
+        phone_no: phone_no,
+        voucher_status: data.voucher_status,
+      };
+      var qr = await this.getQRCode(qrData);
 
-      if (data.voucher_status != "InActive") {
-        var sql =
-          "INSERT INTO evoucher(title,description,expiry_date,image,payment_method,chosen_payment,quantity,buytype,phone_no,voucher_status,promo_code,use_status,amount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        try {
-          var result = await db.query(sql, [
-            uuid,
-            description,
-            expiry_date,
-            image,
-            data.cardType,
-            data.cardType,
-            quantity,
-            buytype,
-            phone_no,
-            data.voucher_status,
-            promoCode,
-            "not_used",
-            amount,
-          ]);
-          var json = {
-            title: uuid,
-            description: description,
-            expiry_date: expiry_date,
-            image: image,
-            payment_method: "Visa",
-            chosen_payment: "Visa",
-            quantity: quantity,
-            buytype: buytype,
-            voucher_status: data.voucher_status,
-            use_status: "not_used",
-            amount: amount,
-          };
-          if (result.affectedRows > 0) {
-            res.status(200).send(json);
-            resolve(result);
-          } else {
-            res.status(409).send("Fail evoucher creation.");
-            reject(err);
+      if (qr != undefined || qr != "" || qr != null) {
+        if (data.voucher_status != "InActive") {
+          var sql =
+            "INSERT INTO evoucher(title,description,expiry_date,image,payment_method,chosen_payment,quantity,buytype,phone_no,voucher_status,promo_code,use_status,amount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+          try {
+            var result = await db.query(sql, [
+              uuid,
+              description,
+              expiry_date,
+              qr,
+              data.cardType,
+              data.cardType,
+              quantity,
+              buytype,
+              phone_no,
+              data.voucher_status,
+              promoCode,
+              "not_used",
+              amount,
+            ]);
+
+            if (result.affectedRows > 0) {
+              res.sendStatus(200);
+              resolve(result);
+            } else {
+              res.status(409).send("Fail evoucher creation.");
+              reject(err);
+            }
+          } catch (err) {
+            console.log("Err in createVoucher : ", err);
           }
-        } catch (err) {
-          console.log("Err in createVoucher : ", err);
+        } else {
+          res.send("Sorry, your evoucher is InActive");
         }
-      } else {
-        res.send("Sorry, your evoucher is InActive");
       }
     });
   }
@@ -216,6 +210,18 @@ class Database_Controller {
         console.log("Err in purchaseItems : ", err);
       }
     });
+  }
+
+  async getQRCode(data) {
+    let stringdata = JSON.stringify(data);
+
+    try {
+      const data = await QRCode.toDataURL(stringdata);
+      console.log("data", data);
+      return data;
+    } catch (err) {
+      console.error(err);
+    }
   }
 }
 module.exports = Database_Controller;
